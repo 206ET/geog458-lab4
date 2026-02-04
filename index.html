@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GEOG 458 Lab 4 – Local Tiles</title>
+  <title>GEOG 458 Lab 4</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
-    html, body, #map { height: 100%; margin: 0; }
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100vh; width: 100vw; }
   </style>
 </head>
 <body>
@@ -15,20 +17,12 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // center on Seattle
     const map = L.map('map').setView([47.61, -122.33], 12);
 
-    // assets/tileset_1/{z}/{x}/{y}.png
-    const tiles1 = L.tileLayer(
-      'https://206ET.github.io/geog458-lab4/assets/tileset_1/{z}/{x}/{y}.png',
-      {
-        minZoom: 11,
-        maxZoom: 15,
-        tms: false,
-        attribution: 'Tiles: QGIS QMetaTiles'
-      }
+    L.tileLayer(
+      'https://206et.github.io/geog458-lab4/assets/tileset_1/{z}/{x}/{y}.png',
+      { minZoom: 11, maxZoom: 15 }
     ).addTo(map);
   </script>
 </body>
 </html>
-
