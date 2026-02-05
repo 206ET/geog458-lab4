@@ -2,25 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GEOG 458 Lab 4</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>GEOG 458 Lab 4 — Tile Sets</title>
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <!-- Mapbox GL JS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 
   <style>
-    html, body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-    }
+    html, body { margin: 0; padding: 0; height: 100%; width: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
 
-    #map {
-      height: 100%;
-      width: 100%;
+    /* simple UI panel */
+    .panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 2;
+      background: rgba(255,255,255,0.95);
+      border-radius: 10px;
+      padding: 12px 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      width: 280px;
+    }
+    .panel h1 {
+      font-size: 14px;
+      margin: 0 0 6px 0;
+      line-height: 1.2;
+    }
+    .panel p {
+      font-size: 12px;
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    .panel .group-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin: 10px 0 6px 0;
+    }
+    .panel label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      margin: 6px 0;
+      cursor: pointer;
+      user-select: none;
+    }
+    .panel input[type="radio"] { transform: scale(1.05); }
+
+    /* attribution note under panel */
+    .attrib-note {
+      font-size: 11px;
+      color: #555;
+      margin-top: 10px;
+      line-height: 1.35;
     }
   </style>
 </head>
@@ -28,22 +64,110 @@
 <body>
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div class="panel">
+    <h1>GEOG 458 Lab 4 — Four Tile Sets</h1>
+    <p>Use the switcher below to view each exported tile set.</p>
+
+    <div class="group-title">Layer switcher</div>
+
+    <!-- Radio buttons = only one tile set visible at a time (clean + matches “single web map” requirement) -->
+    <label>
+      <input type="radio" name="tileset" value="ts1" checked />
+      Tile Set 1 — Basemap (Mapbox)
+    </label>
+
+    <label>
+      <input type="radio" name="tileset" value="ts2" />
+      Tile Set 2 — Thematic (Public dataset)
+    </label>
+
+    <label>
+      <input type="radio" name="tileset" value="ts3" />
+      Tile Set 3 — Basemap + Thematic
+    </label>
+
+    <label>
+      <input type="radio" name="tileset" value="ts4" />
+      Tile Set 4 — Themed Map Design
+    </label>
+
+    <div class="attrib-note">
+      Data/tiles exported in QGIS. Basemap style inspired by Mapbox.
+    </div>
+  </div>
 
   <script>
-    // Create map
-    const map = L.map('map').setView([47.61, -122.33], 12);
+    
+    mapboxgl.accessToken = "pk.eyJ1IjoiMjA2ZXQiLCJhIjoiY21oZHVlNGhsMDZvajJpb3JiYW44NDdkbCJ9.2t0kCjiMB6Mad8U9mEQfKQ";
 
-    // Tileset 1 (only one for now )
-    L.tileLayer(
-      'https://206et.github.io/geog458-lab4/assets/tileset_1/{z}/{x}/{y}.png',
-      {
-        minZoom: 11,
-        maxZoom: 15,
-        attribution: 'GEOG 458 Lab 4'
+    // Map init (set somewhere in Seattle)
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: {
+        version: 8,
+        sources: {},
+        layers: [
+          // background so you don't see grey void while loading
+          { id: "bg", type: "background", paint: { "background-color": "#ffffff" } }
+        ]
+      },
+      center: [-122.304, 47.602], // Central District-ish
+      zoom: 12
+    });
+
+    // (meets lab requirements: zoom + scale + attribution)
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), "top-right");
+    map.addControl(new mapboxgl.ScaleControl({ maxWidth: 120, unit: "imperial" }), "bottom-left");
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
+
+    
+    function addRasterTileset(sourceId, layerId, tilesetFolder) {
+      map.addSource(sourceId, {
+        type: "raster",
+        tiles: [`assets/${tilesetFolder}/{z}/{x}/{y}.png`],
+        tileSize: 256,
+        
+        minzoom: 0,
+        maxzoom: 22
+      });
+
+      map.addLayer({
+        id: layerId,
+        type: "raster",
+        source: sourceId,
+        layout: { visibility: "none" }
+      });
+    }
+
+    function setVisibleLayer(layerIdToShow) {
+      const all = ["ts1_layer", "ts2_layer", "ts3_layer", "ts4_layer"];
+      for (const id of all) {
+        map.setLayoutProperty(id, "visibility", (id === layerIdToShow) ? "visible" : "none");
       }
-    ).addTo(map);
+    }
+
+    map.on("load", () => {
+    
+      // assets/tileset_1, assets/tileset_2, assets/tileset_3, assets/tileset_4
+      addRasterTileset("ts1_src", "ts1_layer", "tileset_1");
+      addRasterTileset("ts2_src", "ts2_layer", "tileset_2");
+      addRasterTileset("ts3_src", "ts3_layer", "tileset_3");
+      addRasterTileset("ts4_src", "ts4_layer", "tileset_4");
+
+      // default view = tileset 1
+      setVisibleLayer("ts1_layer");
+
+      // Hook up switcher
+      document.querySelectorAll('input[name="tileset"]').forEach((radio) => {
+        radio.addEventListener("change", (e) => {
+          const v = e.target.value;
+          if (v === "ts1") setVisibleLayer("ts1_layer");
+          if (v === "ts2") setVisibleLayer("ts2_layer");
+          if (v === "ts3") setVisibleLayer("ts3_layer");
+          if (v === "ts4") setVisibleLayer("ts4_layer");
+        });
+      });
+    });
   </script>
 </body>
 </html>
